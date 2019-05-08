@@ -12,13 +12,15 @@ var connection = mysql.createConnection({
     user: "root",
 
     // Your password
-    password: "",
+    password: "q5epoe4w",
     database: "bamazon"
 });
 
 connection.connect(function (err) {
     if (err) throw err;
+    console.log("connection:", err)
     var displayAll = function () {
+        console.log("inside displayALL")
         var query = "Select * FROM products";
         connection.query(query, function (err, res) {
             if (err) throw err;
@@ -32,25 +34,16 @@ connection.connect(function (err) {
                 );
             }
             console.log(displayTable.toString());
-            displayAll();
+            promptCustomer();
+
+
         });
     };
+    displayAll();
+
 });
 
 
-//   function displayAll() {
-//     console.log("Selecting all products...\n");
-//     connection.query("SELECT * FROM products", function(err, res) {
-//       if (err) throw err;
-//       // Log all results of the SELECT statement
-//     //   console.log(res);
-//       for (var i = 0; i < res.length; i++){
-//         // console.log("row" + i + "---" + res[i].product_name)
-
-//       }
-//       //connection.end();
-//     });
-//   }
 
 function promptCustomer() {
     inquirer
@@ -67,17 +60,14 @@ function promptCustomer() {
                 message: "Please type the how many units of the product you would like to buy",
                 filter: Number
             },
-            
+
         ])
         .then(function (answer) {
-            // console.log("answer: ", answer)
-            // var idchoiceParse = parseInt(answer.idchoice)
-            // console.log(idchoiceParse)
-            var itemID = answer.item_id;
-            var quantity = answer.quantity;
-            // var unitsParse = parseInt(answer.units)
-            var queryStr = "SELECT item_id, stock_quantity FROM products WHERE ?";
-            connection.query(queryStr, { item_id: itemID }, function (err, data) {
+            var itemID = parseInt(answer.idchoice);
+            var quantity = answer.units;
+            console.log("before select: ", itemID, quantity)
+            var queryStr = "SELECT * FROM products WHERE item_id=" + itemID;
+            connection.query(queryStr, function (err, data) {
                 // console.log(err)
                 // console.log("product:", data)
                 if (err) throw err;
@@ -91,64 +81,67 @@ function promptCustomer() {
                     // If the quantity requested by the user is available in stock
                     if (quantity <= productData.stock_quantity) {
                         console.log('Product you requested is in stock.');
-                        var newQueryStr = 'UPDATE products SET stock_quantity = ' + (productData.stock_quantity - quantity) + ' WHERE item_id = ' + item;
+                        var newQueryStr = 'UPDATE products SET stock_quantity = ' + (productData.stock_quantity - quantity) + ' WHERE item_id = ' + itemID;
                         console.log('newQueryStr = ' + newQueryStr);
                         console.log('Your order has been placed! Your total is $' + productData.price * quantity);
                         console.log('Thank you for shopping with us!');
                         console.log("\n---------------------------------------------------------------------\n");
+                        connection.query(newQueryStr, function (err, res) {
+                            console.log("great do you want anything else")
+                            //console.log(res)
+                            promptCustomer();
 
-                        // 	// End the database connection
-                        // 	connection.end();
+                        })
+        
+                    }
+                    else {
+                        console.log('Sorry there is not enough product in stock!');
+                        console.log('Please change your order');
+                        console.log("\n---------------------------------------------------------------------\n");
+
+                        promptCustomer();
+
                     }
                 }
 
-                // } else {
-                // 	console.log('Sorry there is not enough product in stock!');
-                // 	console.log('Please change your order');
-                // 	console.log("\n---------------------------------------------------------------------\n");
-
-                // }
 
             });
-         updateStock();
-    
+
         });
-    }
+}
 
-            //  displayAll();
-
-            function updateStock(data) {
-                // verify the stock  you compare the stcok unit with the choice units
-                // if enought the sell the product: update the db with the new stock
-                // if not enough tell the customer sorry we dont have enough
-           
-
-                // Construct the db query string
-                queryStr = 'SELECT * FROM products';
-
-                // Make the db query
-                connection.query(queryStr, function (err, data) {
-                    if (err) throw err;
-                    console.log('Inventory Available: ');
-                    console.log('...................\n');
+function updateStock(data) {
+    // verify the stock  you compare the stcok unit with the choice units
+    // if enought the sell the product: update the db with the new stock
+    // if not enough tell the customer sorry we dont have enough
 
 
-                    console.log("---------------------------------------------------------------------\n");
+    // Construct the db query string
+    queryStr = 'SELECT * FROM products';
+
+    // Make the db query
+    connection.query(queryStr, function (err, data) {
+        if (err) throw err;
+        console.log('Inventory Available: ');
+        console.log('...................\n');
 
 
-                    promptCustomer();
-                });
-            }
-            // runBamazon executes the app
-            function runBamazon() {
-                // console.log("___ENTER runBamazon___");
+        console.log("---------------------------------------------------------------------\n");
 
-                // Displays inventory
-                updateStock();
-            }
 
-            // Run the application
-            runBamazon();
+    
+    });
+}
+// runBamazon executes the app
+function runBamazon() {
+    // console.log("___ENTER runBamazon___");
+
+    // Displays inventory
+    updateStock();
+}
+
+// Run the application
+runBamazon();
     //   }
 
 
